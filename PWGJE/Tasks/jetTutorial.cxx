@@ -20,9 +20,6 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -51,19 +48,6 @@ struct JetTutorialTask {
                               {"h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"h_track_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"h_track_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-
-                              {"h_track_Pi_TOF_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-                              {"h_track_Pi_TOF_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"h_track_Pi_TOF_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-
-                              {"h_track_Pi_TPC_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-                              {"h_track_Pi_TPC_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"h_track_Pi_TPC_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-
-                              {"h_track_Pi_combined_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
-                              {"h_track_Pi_combined_eta", "track #eta;#eta_{track};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
-                              {"h_track_Pi_combined_phi", "track #varphi;#varphi_{track};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-
                               {"h_track_chi2PerCluster", "track #chi^{2} per cluste ;#chi^{2};entries", {HistType::kTH1F, {{100, 0, 40}}}},
                               {"h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
@@ -140,8 +124,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processCollisions, "process JE collisions", false);
 
-  void processCollisionsWithExternalTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks,
-     soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,aod::pidTOFPi,aod::pidTPCPi> const&)
+  void processCollisionsWithExternalTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
@@ -156,31 +139,8 @@ struct JetTutorialTask {
       registry.fill(HIST("h_track_pt"), track.pt());
       registry.fill(HIST("h_track_eta"), track.eta());
       registry.fill(HIST("h_track_phi"), track.phi());
-      auto originalTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,aod::pidTOFPi,aod::pidTPCPi>>();
+      auto originalTrack = track.track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
       registry.fill(HIST("h_track_chi2PerCluster"), originalTrack.tpcChi2NCl());
-
-
-      if (std::abs(originalTrack.tofNSigmaPi()) < 3.0f) {
-          registry.fill(HIST("h_track_Pi_TOF_pt"), originalTrack.pt());
-          registry.fill(HIST("h_track_Pi_TOF_eta"), originalTrack.eta());
-          registry.fill(HIST("h_track_Pi_TOF_phi"), originalTrack.phi());
-      }
-
-      if (std::abs(originalTrack.tpcNSigmaPi()) < 3.0f) {
-          registry.fill(HIST("h_track_Pi_TPC_pt"), originalTrack.pt());
-          registry.fill(HIST("h_track_Pi_TPC_eta"), originalTrack.eta());
-          registry.fill(HIST("h_track_Pi_TPC_phi"), originalTrack.phi());
-      }
-
-      float combNSigmaPi = std::sqrt(originalTrack.tofNSigmaPi() * originalTrack.tofNSigmaPi() + originalTrack.tpcNSigmaPi()* originalTrack.tpcNSigmaPi());
-
-      if (std::abs(combNSigmaPi) < 3.0f) {
-          registry.fill(HIST("h_track_Pi_combined_pt"), originalTrack.pt());
-          registry.fill(HIST("h_track_Pi_combined_eta"), originalTrack.eta());
-          registry.fill(HIST("h_track_Pi_combined_phi"), originalTrack.phi());
-      }
-
-
     }
   }
   PROCESS_SWITCH(JetTutorialTask, processCollisionsWithExternalTracks, "process JE collisions with access to the original track table", false);
